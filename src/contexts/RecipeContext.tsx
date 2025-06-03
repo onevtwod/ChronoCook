@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Recipe } from '../models';
-import mockRecipes from '../utils/mockData';
+// import mockRecipes from '../utils/mockData'; // Remove this line
+import { recipeService } from '../services';
 
 interface RecipeContextType {
   recipes: Recipe[];
@@ -38,15 +39,15 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsLoading(true);
       setError(null);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Use recipeService
+      const fetchedRecipes = await recipeService.getRecipes();
+      setRecipes(fetchedRecipes);
       
-      // Use mock data for now
-      setRecipes(mockRecipes);
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
       setError('Failed to fetch recipes');
+      setRecipes([]); // Set to empty array on error
       console.error('Error fetching recipes:', error);
     }
   };
@@ -54,11 +55,10 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const fetchRecipesByEra = async (era: string): Promise<Recipe[]> => {
     try {
       setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const filteredRecipes = mockRecipes.filter(
+      setError(null); // Clear previous errors
+
+      const allRecipes = await recipeService.getRecipes(); // Fetch all recipes
+      const filteredRecipes = allRecipes.filter(
         recipe => recipe.era.includes(era)
       );
       
@@ -68,7 +68,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsLoading(false);
       setError('Failed to fetch recipes by era');
       console.error('Error fetching recipes by era:', error);
-      return [];
+      return []; // Return empty array on error
     }
   };
 
@@ -76,16 +76,15 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       // Don't update global loading state for individual recipe fetches
       // as it's handled locally in the components
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const recipe = mockRecipes.find(r => r.id === id) || null;
+      setError(null); // Clear previous errors
+
+      const recipe = await recipeService.getRecipeById(id);
       
       return recipe;
     } catch (error) {
+      setError('Failed to fetch recipe by ID'); // Optional: set specific error for this
       console.error('Error fetching recipe:', error);
-      return null;
+      return null; // Return null on error
     }
   };
 
